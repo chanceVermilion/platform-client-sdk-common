@@ -6,33 +6,27 @@ import java.text.DateFormat;
 import java.util.*;
 
 public class ApiRequestBuilder<T> {
-    private static ThreadLocal<DateFormat> DATE_FORMAT;
+    private static DateFormat DATE_FORMAT;
     private static final String[] EMPTY = new String[0];
 
     public static void setDateFormat(DateFormat dateFormat) {
-        DATE_FORMAT = new ThreadLocal<>();
-        DATE_FORMAT.set(dateFormat);
-    }
-
-    public static DateFormat getDateFormat() {
-        // Lazy load ApiDateFormat
-        synchronized (EMPTY) {
-            if (DATE_FORMAT == null) {
-                DateFormat dateFormat = new ApiDateFormat();
-                dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-                setDateFormat(dateFormat);
-            }
+        synchronized(DATE_FORMAT) {
+            DATE_FORMAT = dateFormat;
         }
-
-        // Return an instance for the calling thread
-        return DATE_FORMAT.get();
     }
 
     /**
      * Format the given Date object into string.
      */
-    public static String formatDate(Date date) {
-        return getDateFormat().format(date);
+    private static String formatDate(Date date) {
+        synchronized (DATE_FORMAT) {
+            if (DATE_FORMAT == null) {
+                DateFormat dateFormat = new ApiDateFormat();
+                dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+                DATE_FORMAT = dateFormat;
+            }
+            return DATE_FORMAT.format(date);
+        }
     }
 
     /**
